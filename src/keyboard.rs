@@ -4,6 +4,7 @@ use tokio::sync::{broadcast, mpsc};
 use crate::config::Device;
 
 pub struct Keyboard {
+    vendor_id: u16,
     product_id: u16,
     usage: u16,
     usage_page: u16,
@@ -13,6 +14,7 @@ pub struct Keyboard {
 impl Keyboard {
     pub fn new(device: Device, reconnect_delay: u64) -> Self {
         return Self {
+            vendor_id: device.vendor_id,
             product_id: device.product_id,
             usage: device.usage,
             usage_page: device.usage_page,
@@ -20,11 +22,15 @@ impl Keyboard {
         };
     }
 
-    fn get_device(product_id: &u16, usage: &u16, usage_page: &u16) -> Result<HidDevice, HidError> {
+    fn get_device(vendor_id: &u16, product_id: &u16, usage: &u16, usage_page: &u16) -> Result<HidDevice, HidError> {
         let hid_api = HidApi::new()?;
         let devices = hid_api.device_list();
         for device_info in devices {
-            if device_info.product_id() == *product_id && device_info.usage() == *usage && device_info.usage_page() == *usage_page {
+            if (*vendor_id == 0 || device_info.vendor_id() == *vendor_id)
+                && (*product_id == 0 || device_info.product_id() == *product_id)
+                && device_info.usage() == *usage
+                && device_info.usage_page() == *usage_page
+            {
                 let device = device_info.open_device(&hid_api)?;
                 return Ok(device);
             }
@@ -34,6 +40,7 @@ impl Keyboard {
     }
 
     pub fn connect(&self) -> (broadcast::Sender<bool>, mpsc::Sender<Vec<u8>>) {
+        let vid = self.vendor_id;
         let pid = self.product_id;
         let usage = self.usage;
         let usage_page = self.usage_page;
@@ -45,7 +52,7 @@ impl Keyboard {
             tracing::info!("Waiting for keyboard...");
             loop {
                 tracing::debug!("Trying to connect...");
-                if let Ok(device) = Self::get_device(&pid, &usage, &usage_page) {
+                if let Ok(device) = Self::get_device(&vid, &pid, &usage, &usage_page) {
                     let _ = &internal_connected_sender.send(true).unwrap();
                     tracing::info!("Connected to keyboard");
                     loop {

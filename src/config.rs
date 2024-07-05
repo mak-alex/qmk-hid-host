@@ -9,6 +9,7 @@ pub struct Config {
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Device {
+    pub vendor_id: u16,
     pub product_id: u16,
     pub usage: u16,
     pub usage_page: u16,
@@ -17,6 +18,7 @@ pub struct Device {
 pub fn get_config() -> Config {
     let default_config = Config {
         device: Device {
+            vendor_id: 0,
             product_id: 0x0844,
             usage: 0x61,
             usage_page: 0xff60,
