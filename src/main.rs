@@ -10,7 +10,8 @@ mod providers;
 
 use config::get_config;
 use keyboard::Keyboard;
-use providers::{_base::Provider, layout::LayoutProvider, media::MediaProvider, time::TimeProvider, volume::VolumeProvider};
+
+use providers::{_base::Provider, layout::LayoutProvider, time::TimeProvider, volume::VolumeProvider, media::MediaProvider};
 
 fn main() {
     let env_filter = tracing_subscriber::EnvFilter::builder()
@@ -26,11 +27,12 @@ fn main() {
 
     let providers: Vec<Box<dyn Provider>> = vec![
         TimeProvider::new(data_sender.clone(), connected_sender.clone()),
+        MediaProvider::new(data_sender.clone(), connected_sender.clone()),
         VolumeProvider::new(data_sender.clone(), connected_sender.clone()),
         LayoutProvider::new(data_sender.clone(), connected_sender.clone(), config.layouts),
-        MediaProvider::new(data_sender.clone(), connected_sender.clone()),
     ];
 
+    
     let mut is_connected = false;
     let mut connected_receiver = connected_sender.subscribe();
 
