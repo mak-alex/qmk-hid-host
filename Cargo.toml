@@ -24,6 +24,7 @@ objc2 = { version = "0.5.2", features = ["apple", "objc2-proc-macros"] }
 objc2-foundation = { version = "0.2.2", features = ["all"] }
 objc2-media-player = { version = "0.2.2", features = ["all"] }
 translit = "0.5.0"
+cocoa = "0.24"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 pulsectl-rs = "0.3.2"

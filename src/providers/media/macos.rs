@@ -151,25 +151,55 @@ unsafe fn get_media_data(info: &NSDictionary<NSString, AnyObject>, pool: Autorel
     (artist, title)
 }
 
-fn send_media_data(artist: &Option<String>, title: &Option<String>, data_sender: &mpsc::Sender<Vec<u8>>, last_artist: &mut String, last_title: &mut String) {
+fn send_media_data(
+    artist: &Option<String>,
+    title: &Option<String>,
+    data_sender: &mpsc::Sender<Vec<u8>>,
+    last_artist: &mut String,
+    last_title: &mut String
+) {
+    let mut updated = false;
+
+    // Обработка артиста
     if let Some(new_artist) = artist {
-        let artist_transliterated = transliterate_text(new_artist);  // Применяем транслитерацию
+        let artist_transliterated = transliterate_text(new_artist);
         if artist_transliterated != *last_artist {
             tracing::info!("Sending new artist (transliterated): {}", artist_transliterated);
             send_data(DataType::MediaArtist, &artist_transliterated, data_sender);
             *last_artist = artist_transliterated;
+            updated = true;
         }
+    } else if !last_artist.is_empty() {
+        // Если информация об артисте отсутствует, отправляем пустую строку
+        tracing::info!("Sending empty artist to clear display.");
+        send_data(DataType::MediaArtist, "", data_sender);
+        *last_artist = String::new();
+        updated = true;
     }
 
+    // Обработка трека
     if let Some(new_title) = title {
-        let title_transliterated = transliterate_text(new_title);  // Применяем транслитерацию
+        let title_transliterated = transliterate_text(new_title);
         if title_transliterated != *last_title {
             tracing::info!("Sending new title (transliterated): {}", title_transliterated);
             send_data(DataType::MediaTitle, &title_transliterated, data_sender);
             *last_title = title_transliterated;
+            updated = true;
         }
+    } else if !last_title.is_empty() {
+        // Если информация о треке отсутствует, отправляем пустую строку
+        tracing::info!("Sending empty title to clear display.");
+        send_data(DataType::MediaTitle, "", data_sender);
+        *last_title = String::new();
+        updated = true;
+    }
+
+    // Добавление небольшой задержки только если данные обновились
+    if updated {
+        std::thread::sleep(std::time::Duration::from_millis(50));
     }
 }
+
 
 
 fn send_data(data_type: DataType, value: &str, data_sender: &mpsc::Sender<Vec<u8>>) {
